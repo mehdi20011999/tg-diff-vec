@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TG-Diff Secure Offloading</title>
+<meta name="description" content="Digital twin-assisted trust-guided diffusion policy for secure collaborative V2V/V2I computation offloading: method, preliminary results and code.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a research project page in the same "traffic console" language as the 3D lab: thesis first, then the mechanism, then the evidence you can poke at. */
+:root{
+  --bg:#eef1f4; --surface:#ffffff; --surface-2:#f6f8fa; --ink:#16202b; --muted:#5a6675; --line:#d5dbe2;
+  --accent:#d99400; --accent-ink:#8a5f00; --rsu:#2a6fd6; --good:#1f9d6b; --bad:#d43d2f;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#8a8a85;
+  --display:"Barlow Condensed","Arial Narrow",sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0f151c; --surface:#17202a; --surface-2:#1d2732; --ink:#e7ecf1; --muted:#93a0ae; --line:#2a3542;
+  --accent:#f2b632; --accent-ink:#f2b632; --rsu:#5b9bf0; --good:#3cc28c; --bad:#f06a5c;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#8f8e88; color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#0f151c; --surface:#17202a; --surface-2:#1d2732; --ink:#e7ecf1; --muted:#93a0ae; --line:#2a3542;
+  --accent:#f2b632; --accent-ink:#f2b632; --rsu:#5b9bf0; --good:#3cc28c; --bad:#f06a5c;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#8f8e88; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 var(--body)}
+a{color:var(--rsu)}
+h1,h2,h3{font-family:var(--display);font-weight:600;letter-spacing:.01em;text-wrap:balance;margin:0}
+h1{font-size:clamp(32px,5vw,54px);line-height:1.02}
+h2{font-size:32px;line-height:1.1}
+h3{font-size:21px;line-height:1.2}
+p{margin:0}
+.wrap{max-width:1120px;margin:0 auto;padding:0 20px}
+header.top{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+header.top .wrap{display:flex;align-items:center;gap:16px;min-height:52px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-weight:700;font-size:20px;letter-spacing:.05em;text-transform:uppercase;display:flex;gap:10px;align-items:center}
+.brand i{width:22px;height:14px;border-radius:2px;background:var(--accent);display:inline-block}
+nav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+nav a{font-family:var(--display);font-size:15px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);text-decoration:none;padding:6px 10px;border-radius:4px}
+nav a:hover,nav a:focus-visible{color:var(--ink);background:var(--surface-2)}
+.eyebrow{font-family:var(--display);font-size:14px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink)}
+section{padding:40px 0;border-top:1px solid var(--line)}
+.hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:32px;padding:36px 0 30px;align-items:end}
+.hero p.lead{margin-top:14px;color:var(--muted);max-width:62ch;font-size:16.5px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.pill{display:inline-block;font-size:12px;font-weight:600;letter-spacing:.03em;padding:3px 10px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--muted)}
+.pill.warn{border-color:var(--accent);color:var(--accent-ink)}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.kpi b{display:block;font-family:var(--mono);font-size:26px;font-weight:500;font-variant-numeric:tabular-nums}
+.kpi span{font-size:12.5px;color:var(--muted)}
+.kpi.bad b{color:var(--bad)} .kpi.good b{color:var(--good)}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px}
+.card .k{font-family:var(--mono);font-size:13px;color:var(--bad)}
+.card p{color:var(--muted);font-size:14px;margin-top:6px}
+.prose{max-width:70ch;color:var(--muted)}
+.prose b{color:var(--ink)}
+.diagram{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto}
+.diagram svg{display:block;min-width:720px;width:100%}
+.diagram text{font-family:var(--body);fill:var(--ink)}
+.eq{font-family:var(--mono);font-size:14px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:10px 12px;overflow-x:auto;white-space:nowrap}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.panel .hd{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line)}
+.panel .bd{padding:12px 14px}
+.tab{font:inherit;font-size:13.5px;border:1px solid var(--line);background:var(--surface-2);color:var(--ink);border-radius:99px;padding:5px 12px;cursor:pointer}
+.tab[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.tab:focus-visible,.chip:focus-visible,nav a:focus-visible,.btn:focus-visible{outline:2px solid var(--rsu);outline-offset:2px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.chip{font:inherit;font-size:12.5px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:5px;padding:3px 9px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.chip[aria-pressed="false"]{opacity:.45}
+.chip i{width:14px;height:3px;border-radius:2px;display:inline-block}
+#chart{width:100%;display:block}
+#chart text{font-family:var(--body);font-size:11.5px;fill:var(--muted)}
+#chart .grid{stroke:var(--line)}
+#chart .val{fill:var(--ink);font-family:var(--mono)}
+.caption{font-size:13px;color:var(--muted);margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line)}
+th{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:600}
+td.n,th.n{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.hl td{background:var(--surface-2);font-weight:600}
+.scroll{overflow-x:auto}
+pre{font-family:var(--mono);font-size:13px;background:var(--surface-2);border:1px solid var(--line);border-radius:6px;padding:12px;overflow-x:auto;margin:0}
+.btn{font:inherit;font-size:13px;border:1px solid var(--line);background:var(--surface);border-radius:5px;padding:4px 10px;cursor:pointer;color:var(--ink)}
+.road{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.road .card{border-top:4px solid var(--line)}
+.road .card.now{border-top-color:var(--accent)}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:5px 8px;border-radius:4px;display:none;z-index:9}
+footer{border-top:1px solid var(--line);padding:24px 0 40px;color:var(--muted);font-size:13px}
+@media (max-width:860px){
+  .hero,.grid2,.road{grid-template-columns:1fr}
+  .grid4{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:440px){.grid4,.kpis{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div class="brand"><i aria-hidden="true"></i>TG-Diff</div>
+  <nav aria-label="Sections"><a href="#threats">Threats</a><a href="#method">Method</a><a href="#results">Results</a><a href="#code">Code</a><a href="#roadmap">Roadmap</a></nav>
+</div></header>
+
+<main class="wrap">
+  <div class="hero">
+    <div>
+      <div class="eyebrow">Article 2 of the thesis · draft v0.1 · November 2026</div>
+      <h1>A diffusion policy that decides where vehicle tasks go can be steered to the attacker.</h1>
+      <p class="lead">TG-Diff puts trust inside the denoising process of a diffusion offloading policy, and uses a digital twin at the roadside unit to expose nodes that lie about their queues. It targets collaborative V2V/V2I offloading with malicious roadside units, malicious helper vehicles, false state reports and poisoned training data.</p>
+      <div class="badges"><span class="pill warn">Preliminary prototype results</span><span class="pill">Python · PyTorch</span><span class="pill">MIT licence</span></div>
+    </div>
+    <div class="kpis" aria-label="Key prototype results with 30% malicious helpers">
+      <div class="kpi bad"><b id="kDiff">–</b><span>tasks on time, unprotected diffusion policy</span></div>
+      <div class="kpi good"><b id="kTg">–</b><span>tasks on time, TG-Diff</span></div>
+      <div class="kpi"><b id="kBc">–</b><span>BC classifier with trust inputs, 30% poisoned labels</span></div>
+      <div class="kpi"><b id="kOv">–</b><span>decision time for 1 to 20 denoising steps</span></div>
+    </div>
+  </div>
+
+  <section id="threats">
+    <div class="eyebrow">Threat model</div>
+    <h2 style="margin:4px 0 14px">Four ways to attack a generative offloading policy</h2>
+    <div class="grid4">
+      <div class="card"><div class="k">A1</div><h3>Black-hole RSU</h3><p>One roadside unit silently drops 60% of the tasks it receives.</p></div>
+      <div class="card"><div class="k">A2</div><h3>Malicious helpers</h3><p>A share of helper vehicles drop 80% of the tasks offloaded to them over V2V.</p></div>
+      <div class="card"><div class="k">A3</div><h3>False state reports</h3><p>Malicious nodes advertise an empty queue to attract traffic.</p></div>
+      <div class="card"><div class="k">A4</div><h3>Data poisoning</h3><p>Part of the offline training data is relabelled to prefer malicious nodes.</p></div>
+    </div>
+    <p class="prose" style="margin-top:14px">Our systematic mapping of 59 studies found that 75% of generative-AI offloading studies ignore security and none protects the decisions of the generative model itself. TG-Diff addresses gaps G1 (secure generative decisions), G2 (V2V with trust) and G3 (decision time).</p>
+  </section>
+
+  <section id="method">
+    <div class="eyebrow">Method</div>
+    <h2 style="margin:4px 0 14px">Trust enters the policy twice</h2>
+    <div class="diagram" role="img" aria-label="Pipeline: candidate nodes report their state; the RSU digital twin predicts their backlog; deviation and behaviour give a trust score; trust is an input of the denoiser and a guidance term at every denoising step; the highest-scoring target receives the task; the outcome updates trust.">
+      <svg viewBox="0 0 1040 250">
+        <defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker></defs>
+        <g stroke="var(--line)" stroke-width="1.5" fill="var(--surface-2)">
+          <rect x="10" y="30" width="170" height="74" rx="8"/><rect x="10" y="140" width="170" height="74" rx="8"/>
+          <rect x="230" y="85" width="190" height="80" rx="8"/>
+          <rect x="470" y="40" width="250" height="170" rx="10" fill="var(--surface)" stroke="var(--accent)" stroke-width="2.5"/>
+          <rect x="770" y="85" width="120" height="80" rx="8"/><rect x="930" y="85" width="100" height="80" rx="8"/>
+        </g>
+        <g font-size="14">
+          <text x="95" y="62" text-anchor="middle" font-weight="600">Node reports</text><text x="95" y="83" text-anchor="middle" font-size="12" fill="var(--muted)">queue, CPU (may lie)</text>
+          <text x="95" y="172" text-anchor="middle" font-weight="600">RSU digital twin</text><text x="95" y="193" text-anchor="middle" font-size="12" fill="var(--muted)">predicted backlog</text>
+          <text x="325" y="115" text-anchor="middle" font-weight="600">Trust τ</text><text x="325" y="136" text-anchor="middle" font-size="12" fill="var(--muted)">reputation × e^(−γΔ)</text><text x="325" y="153" text-anchor="middle" font-size="12" fill="var(--muted)">Δ = |report − twin|</text>
+          <text x="595" y="70" text-anchor="middle" font-weight="600">TG-Diff denoiser × K</text>
+          <text x="595" y="100" text-anchor="middle" font-size="12.5" fill="var(--muted)">1. trust is a conditioning input</text>
+          <text x="595" y="122" text-anchor="middle" font-size="12.5" fill="var(--muted)">2. at each DDIM step:</text>
+          <text x="595" y="142" text-anchor="middle" font-size="12.5" fill="var(--ink)" font-family="var(--mono)">x̂₀ ← x̂₀ + λ·log τ</text>
+          <text x="595" y="175" text-anchor="middle" font-size="12" fill="var(--muted)">noise → scores over 7 targets</text>
+          <text x="830" y="118" text-anchor="middle" font-weight="600">Decision</text><text x="830" y="139" text-anchor="middle" font-size="12" fill="var(--muted)">argmax target</text>
+          <text x="980" y="118" text-anchor="middle" font-weight="600">Result</text><text x="980" y="139" text-anchor="middle" font-size="12" fill="var(--muted)">on time / lost</text>
+        </g>
+        <g stroke="var(--muted)" stroke-width="1.6" fill="none" marker-end="url(#ar)">
+          <path d="M180 67 L228 112"/><path d="M180 177 L228 140"/><path d="M420 125 L468 125"/><path d="M720 125 L768 125"/><path d="M890 125 L928 125"/>
+          <path d="M980 165 L980 236 L325 236 L325 167" stroke-dasharray="5 4"/>
+        </g>
+        <text x="650" y="230" font-size="12" fill="var(--muted)">outcome updates the reputation (s, u)</text>
+      </svg>
+    </div>
+    <div class="grid2" style="margin-top:16px">
+      <div>
+        <h3 style="margin-bottom:8px">Trust from behaviour and from the twin</h3>
+        <div class="eq">τⱼ = (sⱼ + 1) / (sⱼ + uⱼ + 2) · exp(−γ · |W̃ⱼ − Ŵⱼ|)</div>
+        <p class="prose" style="margin-top:8px">The beta reputation counts tasks returned on time (s) and lost (u). The twin term penalises a node whose reported backlog W̃ contradicts the backlog Ŵ predicted from the tasks the RSU dispatched, <b>before</b> any task is lost.</p>
+      </div>
+      <div>
+        <h3 style="margin-bottom:8px">Trust-guided denoising</h3>
+        <div class="eq">x̂₀,ᵢ ← x̂₀,ᵢ + λ · log τᵢ &nbsp; at every DDIM step</div>
+        <p class="prose" style="margin-top:8px">The denoiser is trained with the DDPM objective by behaviour cloning from a privileged expert. Guidance acts <b>inside</b> the sampling trajectory, so an untrusted target is suppressed even if poisoned data taught the denoiser to prefer it.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="results">
+    <div class="eyebrow">Preliminary results · prototype, 3 evaluation seeds</div>
+    <h2 style="margin:4px 0 6px">What the prototype shows</h2>
+    <p class="prose" style="margin-bottom:14px">1.5 km highway, 3 RSUs with MEC servers, 50 vehicles, 0.7 tasks per vehicle per second, 60 s episodes. Results will be replaced by the SUMO-based campaign.</p>
+    <div class="panel">
+      <div class="hd" role="tablist" aria-label="Experiment">
+        <button class="tab" data-exp="E2" aria-pressed="true">Malicious nodes</button>
+        <button class="tab" data-exp="E3" aria-pressed="false">Data poisoning</button>
+        <button class="tab" data-exp="E4s" aria-pressed="false">Steps: quality</button>
+        <button class="tab" data-exp="E4t" aria-pressed="false">Steps: decision time</button>
+        <div class="chips" id="chips"></div>
+      </div>
+      <div class="bd">
+        <svg id="chart" viewBox="0 0 760 330" role="img" aria-label="Line chart of the selected experiment"></svg>
+        <p class="caption" id="cap"></p>
+      </div>
+    </div>
+
+    <div class="grid2" style="margin-top:16px">
+      <div class="panel"><div class="hd"><h3>Ablation</h3><span class="pill">30% malicious, 20% poisoned</span></div>
+        <div class="bd scroll"><table id="tAbl"><thead><tr><th>Variant</th><th class="n">On time</th><th class="n">Latency</th><th class="n">Lost</th></tr></thead><tbody></tbody></table>
+        <p class="caption">Trust guidance is the decisive component.</p></div></div>
+      <div class="panel"><div class="hd"><h3>Value of the digital twin</h3><span class="pill">liars only, 80 vehicles, heavy load</span></div>
+        <div class="bd scroll"><table id="tDt"><thead><tr><th>Policy</th><th class="n">On time</th><th class="n">Latency</th></tr></thead><tbody></tbody></table>
+        <p class="caption">Nodes that lie about their queue but never drop tasks are invisible to behaviour-only trust; the twin exposes them.</p></div></div>
+    </div>
+    <p class="prose" style="margin-top:14px"><b>Limits.</b> Synthetic highway instead of SUMO traces; discrete target choice, where a trust-aware greedy heuristic is already strong (it also reaches 99% under attack, with lower latency than TG-Diff without attack); behaviour cloning instead of critic-based training; one training seed; non-adaptive attackers.</p>
+  </section>
+
+  <section id="code">
+    <div class="eyebrow">Reproduce</div>
+    <h2 style="margin:4px 0 14px">Run it in 15 minutes on a laptop</h2>
+    <div class="grid2">
+      <pre id="cmd">git clone https://github.com/mehdi20011999/tg-diff-vec.git
+cd tg-diff-vec
+pip install torch numpy matplotlib
+python run_experiments.py   # E1-E5, about 15 min on 2 CPU cores
+python run_e6.py            # digital-twin isolation
+python make_figures.py</pre>
+      <div class="prose">
+        <p><b>tgdiff/env.py</b>: VEC environment with RSUs, cloud, helper vehicles, digital twin, beta trust and the four attacks.</p>
+        <p style="margin-top:8px"><b>tgdiff/policies.py</b>: Greedy, Greedy+Trust, BC-MLP, diffusion policy (DDPM training, DDIM sampling) and TG-Diff.</p>
+        <p style="margin-top:8px"><b>paper/</b>: LaTeX draft (IEEEtran). <b>docs/</b>: this page.</p>
+        <p style="margin-top:10px"><button class="btn" id="copy">Copy commands</button> <span id="copied" class="pill" hidden>Copied</span></p>
+      </div>
+    </div>
+  </section>
+
+  <section id="roadmap">
+    <div class="eyebrow">Thesis roadmap</div>
+    <h2 style="margin:4px 0 14px">Three articles, one question: secure generative offloading for vehicles</h2>
+    <div class="road">
+      <div class="card"><div class="k" style="color:var(--muted)">Article 1 · MAIDSS’27</div><h3>Systematic mapping</h3><p>59 studies on generative AI for vehicular offloading; 75% ignore security. <a href="https://mehdi20011999.github.io/genai-vec-offloading-lab/">3D lab and literature map</a>.</p></div>
+      <div class="card now"><div class="k" style="color:var(--accent-ink)">Article 2 · this page</div><h3>TG-Diff</h3><p>Secure the <b>decision</b>: trust-guided diffusion with a digital twin, against malicious nodes and poisoning.</p></div>
+      <div class="card"><div class="k" style="color:var(--muted)">Article 3 · planned</div><h3>Trust-adaptive encryption</h3><p>Secure the <b>data</b>: homomorphic split inference of generative models whose encryption level follows node trust and vehicle handovers.</p></div>
+    </div>
+  </section>
+</main>
+<footer><div class="wrap">Mehdi Ammou · IPSS, Faculty of Sciences, Mohammed V University in Rabat · supervised by Pr H. Echoukairi and Pr M. El Ghmary. Preliminary results from a prototype, November 2026.</div></footer>
+<div class="tip" id="tip"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const SER = {"TG-Diff":"--s1","Diff":"--s2","BC-MLP":"--s3","Greedy":"--s4","Greedy+Trust":"--s5","Expert":"--s6"};
+const DASH = {"Greedy":"6 4","Greedy+Trust":"6 4","Expert":"2 3"};
+const EXP = {
+  E2:{key:"E2", xs:["0.0","0.1","0.2","0.3","0.4"], xl:x=>Math.round(x*100)+"%", xt:"Malicious helper vehicles (with black-hole RSU and false reports)", m:"succ", yt:"Tasks on time (%)", s:["Expert","Greedy","Greedy+Trust","BC-MLP","Diff","TG-Diff"], cap:"Unprotected diffusion follows the false reports; TG-Diff stays at the expert's level."},
+  E3:{key:"E3", xs:["0.0","0.1","0.2","0.3"], xl:x=>Math.round(x*100)+"%", xt:"Poisoned training labels (30% malicious helpers)", m:"succ", yt:"Tasks on time (%)", s:["BC-MLP","Diff","TG-Diff"], cap:"Trust inputs alone do not survive poisoning (BC-MLP); trust guidance does (TG-Diff)."},
+  E4s:{key:"E4", xs:["1","2","5","10","20"], xl:x=>x, xt:"DDIM sampling steps K", m:"succ", yt:"Tasks on time (%)", s:["Diff","TG-Diff"], cap:"Quality barely depends on K in this discrete setting: few steps suffice."},
+  E4t:{key:"E4", xs:["1","2","5","10","20"], xl:x=>x, xt:"DDIM sampling steps K", m:"over", yt:"Decision time (ms, measured on 2 CPU cores)", s:["Diff","TG-Diff"], cap:"Decision time grows linearly with K, from about 0.2 ms to 2.3 ms; deadlines are 0.4–1 s."},
+};
+let R = null, cur = "E2", hidden = new Set();
+const fmt = (x,d=1) => Number.isFinite(x) ? x.toFixed(d) : "–";
+
+function val(e, x, s, m){ const d = R[e.key][x] && R[e.key][x][s]; if(!d) return null; return m==="over" ? [d[m][0]*1000, d[m][1]*1000] : [d[m][0]*100, d[m][1]*100]; }
+function draw(){
+  const e = EXP[cur], W=760, H=330, m={l:58,r:20,t:16,b:52};
+  const series = e.s.filter(s => !hidden.has(s));
+  const all = []; series.forEach(s => e.xs.forEach(x => { const v = val(e,x,s,e.m); if(v){ all.push(v[0]-v[1], v[0]+v[1]); } }));
+  let lo = e.m==="over" ? 0 : Math.floor(Math.min(...all, 100)/5)*5, hi = e.m==="over" ? Math.ceil(Math.max(...all)*1.1*2)/2 : 100.5;
+  if(!all.length){ lo = 0; hi = 100; }
+  const X = i => m.l + (e.xs.length===1?0.5:i/(e.xs.length-1))*(W-m.l-m.r), Y = v => m.t + (hi-v)/(hi-lo)*(H-m.t-m.b);
+  let g = "";
+  const step = e.m==="over" ? 0.5 : (hi-lo>20 ? 10 : 5);
+  for(let v = Math.ceil(lo/step)*step; v <= hi; v += step){ g += `<line class="grid" x1="${m.l}" x2="${W-m.r}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${m.l-8}" y="${Y(v)+4}" text-anchor="end">${e.m==="over"?v.toFixed(1):v}</text>`; }
+  e.xs.forEach((x,i) => g += `<text x="${X(i)}" y="${H-m.b+18}" text-anchor="middle">${e.xl(+x)}</text>`);
+  g += `<text x="${(m.l+W-m.r)/2}" y="${H-8}" text-anchor="middle">${e.xt}</text><text transform="translate(14 ${(m.t+H-m.b)/2}) rotate(-90)" text-anchor="middle">${e.yt}</text>`;
+  series.forEach(s => {
+    const pts = e.xs.map((x,i) => { const v = val(e,x,s,e.m); return v ? [X(i), Y(v[0]), v, x] : null; }).filter(Boolean);
+    const col = `var(${SER[s]})`, w = s==="TG-Diff" ? 3 : 2;
+    g += `<path d="${pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ")}" fill="none" stroke="${col}" stroke-width="${w}" ${DASH[s]?`stroke-dasharray="${DASH[s]}"`:""}/>`;
+    pts.forEach(p => { if(p[2][1] > 0.05) g += `<line x1="${p[0]}" x2="${p[0]}" y1="${Y(p[2][0]-p[2][1])}" y2="${Y(p[2][0]+p[2][1])}" stroke="${col}" stroke-width="1.2"/>`;
+      g += `<circle cx="${p[0]}" cy="${p[1]}" r="${s==="TG-Diff"?5:4}" fill="${col}" stroke="var(--surface)" stroke-width="2" data-tip="${s} · ${e.xl(+p[3])}: ${fmt(p[2][0], e.m==="over"?2:1)}${e.m==="over"?" ms":"%"} ± ${fmt(p[2][1], e.m==="over"?2:1)}"/>`; });
+    const last = pts[pts.length-1]; if(last && series.length <= 3) g += `<text class="val" x="${last[0]-6}" y="${last[1]-10}" text-anchor="end">${s}</text>`;
+  });
+  $("#chart").innerHTML = g;
+  $("#chart").querySelectorAll("[data-tip]").forEach(c => { c.addEventListener("mousemove", ev => { const t=$("#tip"); t.style.display="block"; t.textContent=c.dataset.tip; t.style.left=Math.min(ev.clientX+12, innerWidth-260)+"px"; t.style.top=(ev.clientY+12)+"px"; }); c.addEventListener("mouseleave", () => $("#tip").style.display="none"); });
+  $("#cap").textContent = e.cap + " Mean ± standard deviation over 3 seeds.";
+  $("#chips").innerHTML = e.s.map(s => `<button class="chip" data-s="${s}" aria-pressed="${!hidden.has(s)}"><i style="background:var(${SER[s]})"></i>${s}</button>`).join("");
+  $("#chips").querySelectorAll(".chip").forEach(b => b.addEventListener("click", () => { hidden.has(b.dataset.s) ? hidden.delete(b.dataset.s) : hidden.add(b.dataset.s); draw(); }));
+}
+document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => { cur = b.dataset.exp; hidden.clear(); document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-pressed", t===b)); draw(); }));
+
+function tables(){
+  $("#tAbl tbody").innerHTML = Object.entries(R.E5).map(([k,d]) => `<tr class="${k.startsWith("TG")?"hl":""}"><td>${k}</td><td class="n">${fmt(d.succ[0]*100)}%</td><td class="n">${fmt(d.lat[0]*1000,0)} ms</td><td class="n">${fmt(d.lost[0],0)}</td></tr>`).join("");
+  $("#tDt tbody").innerHTML = Object.entries(R.E6["80"]).map(([k,d]) => `<tr class="${k==="TG-Diff (DT)"?"hl":""}"><td>${k}</td><td class="n">${fmt(d.succ[0]*100)}%</td><td class="n">${fmt(d.lat[0]*1000,0)} ms</td></tr>`).join("");
+  $("#kDiff").textContent = fmt(R.E2["0.3"]["Diff"].succ[0]*100) + "%";
+  $("#kTg").textContent = fmt(R.E2["0.3"]["TG-Diff"].succ[0]*100) + "%";
+  $("#kBc").textContent = fmt(R.E3["0.3"]["BC-MLP"].succ[0]*100) + "%";
+  $("#kOv").textContent = fmt(R.E4["1"]["TG-Diff"].over[0]*1000,1) + "–" + fmt(R.E4["20"]["TG-Diff"].over[0]*1000,1) + " ms";
+}
+$("#copy").addEventListener("click", async () => { try { await navigator.clipboard.writeText($("#cmd").textContent); $("#copied").hidden = false; } catch(e) {} });
+
+fetch("data/results.json").then(r => r.json()).then(d => { R = d; tables(); draw(); })
+  .catch(() => { $("#cap").textContent = "Open this page through GitHub Pages or a local server (python -m http.server) so it can load data/results.json."; });
+</script>
+</body>
+</html>
